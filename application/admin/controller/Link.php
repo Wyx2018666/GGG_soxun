@@ -1,93 +1,127 @@
 <?php
 namespace app\admin\controller;
-use app\admin\model\Link as LinkModel;
-use app\admin\controller\Common;
-class Link extends Common
+use think\Controller;
+class Link extends Controller
 {
-
-
-
+	/**
+	*商品品牌列表
+	*/
     public function lst()
     {
-        $link=new LinkModel();
-        if(request()->isPost()){
-            $sorts=input('post.');
-            foreach ($sorts as $k => $v) {
-                $link->update(['id'=>$k,'sort'=>$v]);
-            }
-            $this->success('更新排序成功！',url('lst'));
-            return;
-        }
-        $linkres=$link->order('sort desc')->paginate(3);
-        $this->assign('linkres',$linkres);
+        $brand=db('link');
+        $linkRes=$brand->order('id desc')->paginate(15);
+        $this->assign([
+            'linkRes'=>$linkRes,
+        ]);
         return view();
-	}
-
-    public function add(){
-        if(request()->isPost()){
+    }
+    /*友情链接添加*/
+    public function add()
+    {
+        if(request()->isAjax()){
             $data=input('post.');
-            $validate = \think\Loader::validate('Link');
-            if(!$validate->scene('add')->check($data)){
-                $this->error($validate->getError());
+            if(session('logo')){
+               $data['logo'] =session('logo');
             }
-            $add=db('link')->insert($data);
-            if($add){
-                $this->success('添加友情链接成功！',url('lst'));
+            if(stripos($data['link_url'], 'http://')===false){
+                $data['link_url']='http://'.$data['link_url'];
+            }
+            if(db('link')->insert($data)){
+                //数据添加成功后销毁session
+                session('logo',null);
+                return json(['error'=>1,'msg'=>'友情链接添加成功']);
             }else{
-                $this->error('添加友情链接失败！');
+                return json(['error'=>0,'msg'=>'友情链接添加失败']);
             }
         }
         return view();
     }
-
-    public function edit(){
-        if(request()->isPost()){
-            $data=input('post.');
-            $validate = \think\Loader::validate('Link');
-            if(!$validate->scene('edit')->check($data)){
-                $this->error($validate->getError());
-            }
-            $link=new LinkModel();
-            $save=$link->save($data,['id'=>$data['id']]);
-            if($save !== false){
-                $this->success('修改链接成功！',url('lst'));
-            }else{
-                $this->error('修改链接失败！');
-            }
-            return;
+    /**
+	*商品品牌修改
+	*/
+    public function edit()
+    {
+        if(request()->isGet()){
+            $id=input('id');
+            $links=db('link')->find($id);
+            $this->assign([
+                'links'=>$links,
+            ]);
+            return view();
         }
-        $links=LinkModel::find(input('id'));
-        $this->assign('links',$links);
-        return view();
+        if(request()->isAjax()){
+            $data=input('post.');
+            if(session('logo')){
+                $oldArticles=db('link')->field('logo')->find($data['id']);
+                $oldArticlelogo=IMG_UPLOADS.$oldArticles['logo'];
+                if(file_exists($oldArticlelogo)){
+                    @unlink($oldArticlelogo);
+                }
+                $data['logo'] =session('logo'); 
+            }
+            if(stripos($data['link_url'], 'http://')===false){
+                $data['link_url']='http://'.$data['link_url'];
+            }
+            $save=db('link')->update($data);
+            if($save==0){
+                return json(['error'=>0,'msg'=>'没有修改任何信息']);
+            }else if($save==1){
+                return json(['error'=>1,'msg'=>'修改成功']);
+            }else{
+                return json(['error'=>2,'msg'=>'修改失败']); 
+            }
+        }
+        
     }
-
-    public function del(){
-        $del=LinkModel::destroy(input('id'));
-        if($del){
-           $this->success('删除链接成功！',url('lst')); 
-        }else{
-            $this->error('删除链接失败！');
+    /**
+	*商品品牌删除
+	*/
+    public function del()
+    {
+        if(request()->isAjax()){
+            $id=input('id');
+            if($id){
+                $oldLinks=db('link')->field('logo')->find($id);
+                $oldLinkLogo=IMG_UPLOADS.$oldLinks['logo'];
+                if(file_exists($oldLinkLogo)){
+                    @unlink($oldLinkLogo);
+                }
+                if(db('link')->delete($id)){
+                    return json(['error'=>0,'msg'=>'删除成功']);
+                }else{
+                    return json(['error'=>1,'msg'=>'删除失败']);
+                }
+            }
         }
     }
 
     
-
-
-
-
-   
-
-	
-
-
-
-
-
-
-
-
-
-
-
-
+    //图片上传
+    public function upload(){
+        if (session('logo')){
+            if (file_exists(IMG_UPLOADS.session('logo'))) {
+                unlink(IMG_UPLOADS.session('logo'));
+            }
+        }
+        $file = request()->file('logo');
+        $info = $file->move(ROOT_PATH . 'public' . DS . 'static' . DS . 'uploads');
+        if($info){
+            session('logo',$info->getSaveName());
+            return DS . 'static' . DS . 'uploads'.DS.$info->getSaveName();
+        }else{
+            echo $file->getError();
+        }
+    }
+    //实时删除缩略图的方法
+    public function canclelogo(){
+        if(request()->isAjax()){
+            if(session('logo')){
+                if(file_exists(IMG_UPLOADS.session('logo'))){
+                    unlink(IMG_UPLOADS.session('logo'));
+                }
+            }
+            session('logo',null);
+        }
+    }
+    
 }

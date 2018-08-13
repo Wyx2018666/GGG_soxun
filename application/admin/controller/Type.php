@@ -1,93 +1,67 @@
 <?php
 namespace app\admin\controller;
-use app\admin\model\Type as TypeModel;
-use app\admin\controller\Common;
-class Type extends Common
+use think\Controller;
+use catetree\Catetree;
+class Type extends Controller
 {
-
-
-
-    public function lst()
-    {
-        $link=new TypeModel();
-        if(request()->isPost()){
-            $sorts=input('post.');
-            foreach ($sorts as $k => $v) {
-                $link->update(['id'=>$k,'sort'=>$v]);
-            }
-            $this->success('更新排序成功！',url('lst'));
-            return;
-        }
-        $linkres=$link->order('sort desc')->paginate(3);
-        $this->assign('linkres',$linkres);
+	public function lst(){
+        $typeRes=db('type')->order('id DESC')->paginate();
+        $this->assign([
+            'typeRes'=>$typeRes
+        ]);
         return view();
-	}
-
+    }
     public function add(){
-        if(request()->isPost()){
+        if(request()->isAjax()){
             $data=input('post.');
-/*            $validate = \think\Loader::validate('Link');
-            if(!$validate->scene('add')->check($data)){
-                $this->error($validate->getError());
+            //数据验证
+            /*$validate = validate('Cate');
+            if(!$validate->check($data)){
+                return json(['error'=>5,'msg'=>$validate->getError()]);
             }*/
-            $add=db('type')->insert($data);
-            if($add){
-                $this->success('添加商品类型成功！',url('lst'));
+            if(db('type')->insert($data)){
+                return json(['error'=>1,'msg'=>'添加成功']);
             }else{
-                $this->error('添加商品类型失败！');
+                return json(['error'=>2,'msg'=>'添加失败']);
             }
         }
         return view();
     }
 
     public function edit(){
-        if(request()->isPost()){
-            $data=input('post.');
-         /*   $validate = \think\Loader::validate('Link');
-            if(!$validate->scene('edit')->check($data)){
-                $this->error($validate->getError());
-            }*/
-            $link=new TypeModel();
-            $save=$link->save($data,['id'=>$data['id']]);
-            if($save !== false){
-                $this->success('修改商品类型成功！',url('lst'));
-            }else{
-                $this->error('修改商品类型失败！');
-            }
-            return;
+        if(request()->isGET()){
+            $id=input('id');
+            $types=db('type')->find($id);
+            $this->assign([
+                'types'=>$types,
+            ]);
+            return view();
         }
-        $links=TypeModel::find(input('id'));
-        $this->assign('links',$links);
-        return view();
+        if(request()->isAjax()){
+            $data=input('post.');
+            //数据验证
+            $save=db('type')->update($data);
+            if($save==0){
+                return json(['error'=>0,'msg'=>'没有修改任何信息']);
+            }else if($save==1){
+                return json(['error'=>1,'msg'=>'修改成功']);
+            }else{
+                return json(['error'=>2,'msg'=>'修改失败']); 
+            }
+        }
     }
 
     public function del(){
-        $del=TypeModel::destroy(input('id'));
-        if($del){
-           $this->success('删除商品类型成功！',url('lst'));
-        }else{
-            $this->error('删除商品类型失败！');
+        if(request()->isAjax()){
+            $id=input('id');
+            if(db('type')->delete($id)){
+                db('attr')->where(array('type_id'=>$id))->delete();
+                return json(['error'=>1,'msg'=>'删除成功']);
+            }else{
+                return json(['error'=>2,'msg'=>'删除失败']);
+            }
         }
     }
 
     
-
-
-
-
-   
-
-	
-
-
-
-
-
-
-
-
-
-
-
-
 }

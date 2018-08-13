@@ -1,0 +1,64 @@
+<body style="background:#f2f2f2">
+<div class="login-div">
+    <h1 class="login-title">商城后台登录</h1>
+    <div class="web_login">
+        <form class="layui-form" onsubmit="return to_login()">
+            <div class="layui-form-item layui-center">
+                <label class="layui-form-label">用户名</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="admin_name" class="layui-input"/>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">密码</label>
+                <div class="layui-input-inline">
+                    <input type="password" name="password" class="layui-input"/>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">验证码</label>
+                <div class="layui-input-inline">
+                    <input style="width:80px;float:left" type="text" name="captcha" class="layui-input"/>
+                    <img id="captcha" style="width:100px;height:40px;display: inline-block;float:right;"
+                         src="{:captcha_src()}" alt="captcha" onclick="this.src='{:captcha_src()}'"/>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-center">
+                    <input type="submit" value="登 录" class="layui-btn login-button"/>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>
+<script>
+    //layui模块的使用
+    layui.use(['layer'], function () {
+        var layer = layui.layer,
+            $ = layui.jquery;
+    });
+</script>
+<script>
+    function to_login() {
+        $.ajax({
+            type: 'POST',
+            url: '/group_check',
+            dataType: 'json',
+            data: $("form").serialize(),
+            //data:{aa:'aaa'},
+            success: function (e) {
+                layer.msg(e.error_msg);
+                if (e == 'jr') {
+                    // layer.msg('请求成功');
+                    window.location.href = "/index";
+                } else {
+                    layer.msg(e);
+                    $("#captcha").click();  //验证码输入错误的时候点击刷新
+                }
+            }
+        });
+        return false;
+    }
+</script>

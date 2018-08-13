@@ -2,7 +2,7 @@
 // +----------------------------------------------------------------------
 // | ThinkPHP [ WE CAN DO IT JUST THINK ]
 // +----------------------------------------------------------------------
-// | Copyright (c) 2006~2016 http://thinkphp.cn All rights reserved.
+// | Copyright (c) 2006~2018 http://thinkphp.cn All rights reserved.
 // +----------------------------------------------------------------------
 // | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
 // +----------------------------------------------------------------------
@@ -14,12 +14,10 @@ return [
     // | 应用设置
     // +----------------------------------------------------------------------
 
-    // 应用命名空间
-    'app_namespace'          => 'app',
     // 应用调试模式
     'app_debug'              => true,
     // 应用Trace
-    'app_trace'              => false,
+    'app_trace'              => true,
     // 应用模式状态
     'app_status'             => '',
     // 是否支持多模块
@@ -106,6 +104,16 @@ return [
     'url_controller_layer'   => 'controller',
     // 表单请求类型伪装变量
     'var_method'             => '_method',
+    // 表单ajax伪装变量
+    'var_ajax'               => '_ajax',
+    // 表单pjax伪装变量
+    'var_pjax'               => '_pjax',
+    // 是否开启请求缓存 true自动缓存 支持设置请求缓存规则
+    'request_cache'          => false,
+    // 请求缓存有效期
+    'request_cache_expire'   => null,
+    // 全局请求缓存排除规则
+    'request_cache_except'   => [],
 
     // +----------------------------------------------------------------------
     // | 模板设置
@@ -117,7 +125,7 @@ return [
         // 模板路径
         'view_path'    => '',
         // 模板后缀
-        'view_suffix'  => 'html',
+        'view_suffix'  => 'htm',
         // 模板文件名分隔符
         'view_depr'    => DS,
         // 模板引擎普通标签开始标记
@@ -132,7 +140,11 @@ return [
 
     // 视图输出字符串内容替换
     'view_replace_str'       => [
-        '__INDEX__'=>'http://127.0.0.1/bick/public/static/index'
+        '__admin__'    => '/static/admin',
+        '__index__'    => '/static/index',
+        '__uploads__'    => '/static/uploads',
+        '__plus__'    => '/static/plus',
+        '__login__'   => '/static/admin/login'
     ],
     // 默认跳转页面对应的模板文件
     'dispatch_success_tmpl'  => THINK_PATH . 'tpl' . DS . 'dispatch_jump.tpl',
@@ -229,18 +241,5 @@ return [
         'type'      => 'bootstrap',
         'var_page'  => 'page',
         'list_rows' => 15,
-    ],
-
-    'captcha'  => [
-        // 验证码字符集合
-        'codeSet'  => '2345678', 
-        // 验证码字体大小(px)
-        'fontSize' => 25, 
-        // 是否画混淆曲线
-        'useCurve' => true, 
-        // 验证码位数
-        'length'   => 4, 
-        // 验证成功后是否重置        
-        'reset'    => true
     ],
 ];

@@ -1,48 +1,13 @@
 <?php
 namespace app\admin\validate;
 use think\Validate;
-class Cate extends Validate
-{
-
-    protected $rule=[
-        'catename'=>'unique:cate|require|max:25',
-    ];
-
-
-    protected $message=[
-        'catename.require'=>'栏目名称不得为空！',
-        'catename.unique'=>'栏目名称不得重复！',
-    ];
-
-    protected $scene=[
-        'add'=>['catename'],
-        'edit'=>['catename'],
-    ];
-
-
-
-
-
-    
-
-    
-
-
-
-
-   
-
-	
-
-
-
-
-
-
-
-
-
-
-
-
+class Cate extends Validate{
+	protected $rule=[
+		'cate_name'=>'require|unique:cate|min:3',
+	];
+	protected $message = [
+		'cate_name.require' =>'分类名称必须',
+		'cate_name.unique'  =>'分类名称不能重复',
+		'cate_name.min'     =>'分类名称过短',
+	];
 }

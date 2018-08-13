@@ -1,103 +1,96 @@
 <?php
 namespace app\admin\controller;
-use app\admin\model\Admin as AdminModel;
-use app\admin\controller\Common;
-class Admin extends Common
+use think\Controller;
+class Admin extends Controller
 {
-
+    /**
+     * 管理员列表
+     * @Author wpw < 1340747350@qq.com >
+     */
     public function lst()
-    {   $auth=new Auth();
-        $admin=new AdminModel();
-        $adminres=$admin->getadmin();
-        foreach ($adminres as $k => $v) {
-            $_groupTitle=$auth->getGroups($v['id']);
-            $groupTitle=$_groupTitle[0]['title'];
-            $v['groupTitle']=$groupTitle;
-        }
-        $this->assign('adminres',$adminres);
-        return view();
-	}
-
-	public function add()
     {
-        if(request()->isPost()){
-            $data=input('post.');
-            $validate = \think\Loader::validate('Admin');
-            if(!$validate->scene('add')->check($data)){
-                $this->error($validate->getError());
-            }
-            $admin=new AdminModel();
-            if($admin->addadmin($data)){
-                $this->success('添加管理员成功！',url('lst'));
-            }else{
-                $this->error('添加管理员失败！');
-            }
-            return;
-        }
-        $authGroupRes=db('auth_group')->select();
-        $this->assign('authGroupRes',$authGroupRes);
+        $adminRes=db('admin')->alias('a')->field('a.*,g.title')->join('auth_group g','a.groupid=g.id')->paginate(15);
+        //获取所有用户组
+        $this->assign([
+            'adminRes'=>$adminRes,
+        ]);
         return view();
-	}
-
-	public function edit($id)
+    }
+    /**
+     * 添加管理员
+     * @Author wpw < 1340747350@qq.com >
+     */
+    public function add()
     {
-        $admins=db('admin')->find($id);
-
-        if(request()->isPost()){
+        if(request()->isAjax()){
             $data=input('post.');
-            $validate = \think\Loader::validate('Admin');
-            if(!$validate->scene('edit')->check($data)){
-                $this->error($validate->getError());
-            }
-            $admin=new AdminModel();
-            $savenum=$admin->saveadmin($data,$admins);
-            if($savenum == '2'){
-                $this->error('管理员用户名不得为空！');
-            }
-            if($savenum !== false){
-                $this->success('修改成功！',url('lst'));
+            $data['create_time']=date('Y-m-d H:i:s');
+            $data['password']=md5($data['password'].md5('wpw'));
+            $add=db('admin')->insertGetId($data);
+            $_data=[];
+            $_data['uid']=$add;
+            $_data['group_id']=$data['groupid'];
+            $addGroupAccess=db('auth_group_access')->insert($_data);
+            if($add && $addGroupAccess){
+                return json(['code'=>1,'msg'=>'管理员添加成功']);
             }else{
-                $this->error('修改失败！');
+                return json(['code'=>0,'msg'=>'管理员添加失败']);
             }
-            return;
         }
-        
-        if(!$admins){
-            $this->error('该管理员不存在');
-        }
-        $authGroupAccess=db('auth_group_access')->where(array('uid'=>$id))->find();
-        $authGroupRes=db('auth_group')->select();
-        $this->assign('authGroupRes',$authGroupRes);
-        $this->assign('admin',$admins);
-        $this->assign('groupId',$authGroupAccess['group_id']);
+        $group=db('auth_group')->select();
+        $this->assign([
+            'group'=>$group,
+        ]);
         return view();
-	}
+    }
 
-    public function del($id){
-        $admin=new AdminModel();
-        $delnum=$admin->deladmin($id);
-        if($delnum == '1'){
-            $this->success('删除管理员成功！',url('lst'));
+    /**
+     * 修改管理员
+     * @Author wpw < 1340747350@qq.com >
+     */
+    public function edit(){
+        if(request()->isGet()){
+            $this->assign([
+                'admins'=>db('admin')->find(input('id')),
+                'group'=>db('auth_group')->select(),
+            ]);
+            return view();
+        }
+        if(request()->isAjax()){
+            $data=input('post.');
+            $save=db('admin')->update($data);
+            db('authGroupAccess')->where(array('uid'=>$data['id']))->update(['group_id'=>$data['groupid']]);
+            if($save!==false){
+                return json(['code'=>1,'msg'=>'修改成功']);
+            }else{
+                return json(['code'=>2,'msg'=>'修改失败']);
+            }
+        }
+    }
+
+    /**
+     * 删除用户
+     * @Author wpw < 1340747350@qq.com >
+     */
+    public function del()
+    {
+        if(request()->isAjax()){
+            if(db('admin')->delete(input('id'))!==false)
+               return json(['code'=>1,'msg'=>'删除成功']);
+            return json(['code'=>2,'msg'=>'删除失败']);
         }else{
-            $this->error('删除管理员失败！');
+            return json(['code'=>3,'msg'=>'非法数据']);
         }
     }
 
+    /**
+     * 退出登录
+     * @Author wpw < 1340747350@qq.com >
+     */
     public function logout(){
-        session(null); 
-        $this->success('退出系统成功！',url('login/index'));
+        session(null);
+        $this->success('退出成功！','Login/index');
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
+    
 }

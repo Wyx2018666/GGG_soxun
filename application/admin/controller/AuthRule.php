@@ -1,110 +1,93 @@
 <?php
 namespace app\admin\controller;
-use app\admin\model\AuthRule as AuthRuleModel;
-use app\admin\controller\Common;
-class AuthRule extends Common
+use think\Controller;
+use catetree\Catetree;
+class AuthRule extends Controller
 {
-
-    public function lst(){
-        $authRule=new AuthRuleModel();
-        if(request()->isPost()){
-            $sorts=input('post.');
-            foreach ($sorts as $k => $v) {
-                $authRule->update(['id'=>$k,'sort'=>$v]);
-            }
-            $this->success('更新排序成功！',url('lst'));
-            return;
-        }
-        $authRuleRes=$authRule->authRuleTree();
-        $this->assign('authRuleRes',$authRuleRes);
+	public function lst(){
+        $tree=new Catetree();
+        $AuthRuleRes=db('auth_rule')->order('id DESC')->select();
+        $AuthRuleRes=$tree->catetree($AuthRuleRes);
+        $this->assign([
+            'AuthRuleRes'=>$AuthRuleRes
+        ]);
         return view();
     }
-
     public function add(){
-        if(request()->isPost()){
+        if(request()->isAjax()){
             $data=input('post.');
-            $plevel=db('auth_rule')->where('id',$data['pid'])->field('level')->find();
-            if($plevel){
-                $data['level']=$plevel['level']+1;
+            //数据验证
+            /*$validate = validate('Cate');
+            if(!$validate->check($data)){
+                return json(['error'=>5,'msg'=>$validate->getError()]);
+            }*/
+            if(db('auth_rule')->insert($data)){
+                return json(['code'=>1,'msg'=>'添加成功']);
             }else{
-               $data['level']=0; 
+                return json(['code'=>2,'msg'=>'添加失败']);
             }
-            $add=db('auth_rule')->insert($data);
-            if($add){
-                $this->success('添加权限成功！',url('lst'));
-            }else{
-                $this->error('添加权限失败！');
-            }
-            return;
         }
-        $authRule=new AuthRuleModel();
-        $authRuleRes=$authRule->authRuleTree();
-        $this->assign('authRuleRes',$authRuleRes);
+        $tree=new Catetree();
+        $AuthRuleRes=db('auth_rule')->order('id DESC')->select();
+        $AuthRuleRes=$tree->catetree($AuthRuleRes);
+        $this->assign([
+            'AuthRuleRes'=>$AuthRuleRes
+        ]);
         return view();
     }
 
     public function edit(){
-        if(request()->isPost()){
-            $data=input('post.');
-            $plevel=db('auth_rule')->where('id',$data['pid'])->field('level')->find();
-            if($plevel){
-                $data['level']=$plevel['level']+1;
-            }else{
-               $data['level']=0; 
-            }
-            $save=db('auth_rule')->update($data);
-            if($save!==false){
-                $this->success('修改权限成功！',url('lst'));
-            }else{
-                $this->error('修改权限失败！');
-            }
-            return;
+        if(request()->isGET()){
+            $id=input('id');
+            $rules=db('auth_rule')->find($id);
+            $tree=new Catetree();
+            $AuthRuleRes=db('auth_rule')->order('id DESC')->select();
+            $AuthRuleRes=$tree->catetree($AuthRuleRes);
+            $this->assign([
+                'rules'=>$rules,
+                'AuthRuleRes'=>$AuthRuleRes
+            ]);
+            return view();
         }
-        $authRule=new AuthRuleModel();
-        $authRuleRes=$authRule->authRuleTree();
-        $authRules=$authRule->find(input('id'));
-        $this->assign(array(
-            'authRuleRes'=>$authRuleRes,
-            'authRules'=>$authRules,
-            ));
-        return view();
+        if(request()->isAjax()){
+            $data=input('post.');
+            $save=db('auth_rule')->update($data);
+            if($save==0){
+                return json(['code'=>0,'msg'=>'没有修改任何信息']);
+            }else if($save==1){
+                return json(['code'=>1,'msg'=>'修改成功']);
+            }else{
+                return json(['code'=>2,'msg'=>'修改失败']);
+            }
+        }
     }
-
 
     public function del(){
-        $authRule=new AuthRuleModel();
-        $authRule->getparentid(input('id'));
-        $authRuleIds=$authRule->getchilrenid(input('id'));
-        $authRuleIds[]=input('id');
-        $del= AuthRuleModel::destroy($authRuleIds);
-        if($del){
-            $this->success('删除权限成功！',url('lst'));
-        }else{
-            $this->error('删除权限失败！');
+        if(request()->isAjax()){
+            $id=input('id');
+            $auth_rule=db('auth_rule');
+            $cateTree=new Catetree();
+            $sonids=$cateTree->childrenids($id,$auth_rule);
+            $sonids[]=intval($id);
+            if($auth_rule->delete($sonids)){
+                return json(['code'=>1,'msg'=>'删除成功']);
+            }else{
+                return json(['code'=>0,'msg'=>'删除失败']);
+            }
         }
     }
 
-
+    public function ajaxlst(){
+        if(request()->isAjax()){
+            $ruleid=input('ruleid');
+            $cateTree=new Catetree();
+            $auth_rule=db('auth_rule');
+            $sonids=$cateTree->childrenids($ruleid,$auth_rule);
+            echo json_encode($sonids);
+        }else{
+            $this->error('非法操作！');
+        }
+    }
 
     
-    
-
-
-
-
-   
-
-	
-
-
-
-
-
-
-
-
-
-
-
-
 }

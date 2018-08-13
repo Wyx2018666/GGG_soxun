@@ -1,140 +1,174 @@
 <?php
 namespace app\admin\controller;
-use app\admin\model\Conf as ConfModel;
-use app\admin\controller\Common;
-class Conf extends Common
+use think\Controller;
+class Conf extends Controller
 {
-
-    public function lst(){
-        if(request()->isPost()){
-            $sorts=input('post.');
-            $conf=new ConfModel();
-            foreach ($sorts as $k => $v) {
-                $conf->update(['id'=>$k,'sort'=>$v]);
-            }
-            $this->success('更新排序成功！',url('lst'));
-            return;
-        }
-        $confres=ConfModel::order('sort desc')->paginate(4);
-        $this->assign('confres',$confres);
-        return view();
-    }
-
-    public function add(){
+    public function conflist(){
+        $conf=db('conf');
         if(request()->isPost()){
             $data=input('post.');
-            $validate = \think\Loader::validate('Conf');
-            if(!$validate->check($data)){
-                $this->error($validate->getError());
+            // 复选框空选问题
+            $checkFields2D=$conf->field('ename')->where(array('form_type'=>'checkbox'))->select();
+            // 改为一维数组
+            $checkFields=array();
+            if($checkFields2D){
+                foreach ($checkFields2D as $k => $v) {
+                    $checkFields[]=$v['ename'];
+                }
             }
-            if($data['values']){
-                $data['values']=str_replace('，', ',', $data['values']);
-            }
-            $conf=new ConfModel();
-            if($conf->save($data)){
-                $this->success('添加配置成功！',url('lst'));
-            }else{
-                $this->error('添加配置失败！');
-            }
-        }
-        return view();
-    }
-
-    public function edit(){
-        if(request()->isPost()){
-            $data=input('post.');
-            $validate = \think\Loader::validate('Conf');
-            if(!$validate->scene('edit')->check($data)){
-                $this->error($validate->getError());
-            }
-            if($data['values']){
-                $data['values']=str_replace('，', ',', $data['values']);
-            }
-            $conf=new ConfModel();
-            $save=$conf->save($data,['id'=>$data['id']]);
-            if($save!==false){
-                $this->success('修改配置成功！',url('lst'));
-            }else{
-                $this->error('修改配置失败！');
-            }
-        }
-        $confs=ConfModel::find(input('id'));
-        $this->assign('confs',$confs);
-        return view();
-    }
-
-    public function del(){
-        $del=ConfModel::destroy(input('id'));
-        if($del){
-           $this->success('删除配置项成功！',url('lst')); 
-        }else{
-            $this->error('删除配置项失败！');
-        }
-    }
-
-    public function conf(){
-        if(request()->isPost()){
-            $data=input('post.');
-            $formarr=array();
+            // 所有发送的字段组成的数组
+            $allFields=array();
+            // 处理文字数据
             foreach ($data as $k => $v) {
-                $formarr[]=$k;
-            }
-            $_confarr=db('conf')->field('enname')->select();
-            $confarr=array();
-            foreach ($_confarr as $k => $v) {
-                $confarr[]=$v['enname'];
-            }
-            $checkboxarr=array();
-            foreach ($confarr as $k => $v) {
-                if(!in_array($v, $formarr)){
-                    $checkboxarr[]=$v;
+                $allFields[]=$k;
+                if(is_array($v)){
+                    $value=implode(',', $v);
+                    $conf->where(array('ename'=>$k))->update(['value'=>$value]);
+                }else{
+                    $conf->where(array('ename'=>$k))->update(['value'=>$v]);
                 }
             }
-            if($checkboxarr){
-                foreach ($checkboxarr as $ke => $v) {
-                    ConfModel::where('enname',$v)->update(['value'=>'']);
+            // 如果复选框未选中任何一个选项，则设置空
+            foreach ($checkFields as $k => $v) {
+                if(!in_array($v, $allFields)){
+                    $conf->where(array('ename'=>$v))->update(['value'=>'']);
                 }
             }
-            if($data){
-            
-                foreach ($data as $k=>$v) {
-                    ConfModel::where('enname',$k)->update(['value'=>$v]);
+            // 处理图片数据
+            // dump($_FILES);
+            if($_FILES){
+                foreach ($_FILES as $k => $v) {
+                    if($v['tmp_name']){
+                        $imgs=$conf->field('value')->where(array('ename'=>$k))->find();
+                        if($imgs['value']){
+                            $oimg=IMG_UPLOADS.$imgs['value'];
+                            if(file_exists($oimg)){
+                                @unlink($oimg);
+                            }
+                        }
+                        $imgSrc=$this->upload($k);
+                        $conf->where(array('ename'=>$k))->update(['value'=>$imgSrc]);
+                    }
                 }
-
-                $this->success('修改配置成功！');
-
             }
-            return;
+            // dump($data); die;
+            $this->success('配置成功！');
         }
-        $confres=ConfModel::order('sort desc')->select();
-        $this->assign('confres',$confres);
+        $conf=db('conf');
+        $ShopConfRes=$conf->where(array('conf_type'=>1))->order('sort desc')->select();
+        $GoodsConfRes=$conf->where(array('conf_type'=>2))->order('sort desc')->select();
+        $this->assign([
+            'ShopConfRes'=>$ShopConfRes,
+            'GoodsConfRes'=>$GoodsConfRes,
+            ]);
         return view();
     }
 
+	/**
+	*配置列表
+	*/
+    public function lst()
+    {
+        $conf=db('conf');
+        if(request()->isAjax()){
+            $data=input('post.');
+            foreach ($data['sort'] as $k => $v) {
+                $conf->where('id','=',$k)->update(['sort'=>$v]);
+            }
+            return json(['error'=>1,'msg'=>'排序成功']);
+        }
+        $confRes=$conf->order('sort DESC')->paginate(15);
+        $this->assign([
+            'confRes'=>$confRes,
+        ]);
+        return view();
+    }
+    /**
+	*配置添加
+	*/
+    public function add()
+    {
+        if(request()->isAjax()){
+            $data=input('post.');
+            if($data['form_type']=='radio' || $data['form_type']=='select' || $data['form_type']=='checkbox'){
+                $data['values']=str_replace('，',',', $data['values']);
+                $data['value']=str_replace('，',',', $data['value']);
+            }
+            //数据验证
+            $validate = validate('Conf');
+            if(!$validate->check($data)){
+                return json(['error'=>3,'msg'=>$validate->getError()]);
+            }
+            if(db('conf')->insert($data)){
+                return json(['error'=>1,'msg'=>'配置添加成功']);
+            }else{
+                return json(['error'=>2,'msg'=>'配置添加成功']);
+            }
+        }
+    	return view();
+    }
+    /**
+	*配置修改
+	*/
+    public function edit()
+    {
+        if(request()->isGet()){
+            $id=input('id');
+            $confs=db('conf')->find($id);
+            $this->assign([
+                'confs'=>$confs,
+            ]);
+            return view();
+        }
+        if(request()->isPost()){
+            $data=input('post.');
+            //将中文逗号进行替换
+            if($data['form_type']=='radio' || $data['form_type']=='select' || $data['form_type']=='checkbox'){
+                $data['values']=str_replace('，',',', $data['values']);
+                $data['value']=str_replace('，',',', $data['value']);
+            }
+            $validate = validate('Conf');
+            if(!$validate->check($data)){
+                return json(['error'=>3,'msg'=>$validate->getError()]);
+            }
+            $save=db('conf')->update($data);
+            if($save==1){
+                return json(['error'=>1,'msg'=>'修改成功']);
+                $this->success('品牌修改成功','lst');
+            }else if($save==0){
+                return json(['error'=>2,'msg'=>'没有修改任何信息']);
+            }else{
+                return json(['error'=>3,'msg'=>'修改失败']);
+            }
+        }
+        
+    }
+    /**
+	*配置删除
+	*/
+    public function del()
+    {
+        if(request()->isAjax()){
+            if(db('conf')->delete(input('id')))
+                return json(['error'=>0,'msg'=>'删除成功']);
+            return json(['error'=>1,'msg'=>'删除失败']);
 
+        }
+    }
 
-
-
+    public function upload($imgName){
+        // 获取表单上传文件 例如上传了001.jpg
+        $file = request()->file($imgName);
+        // 移动到框架应用根目录/public/uploads/ 目录下
+        if($file){
+            $info = $file->move(ROOT_PATH . 'public' . DS . 'static' . DS . 'uploads');
+            if($info){
+                return  $info->getSaveName();
+            }else{
+                // 上传失败获取错误信息
+                return $file->getError();
+            }
+        }
+    }
     
-
-    
-
-
-
-
-   
-
-	
-
-
-
-
-
-
-
-
-
-
-
-
 }

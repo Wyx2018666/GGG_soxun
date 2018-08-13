@@ -1,33 +1,34 @@
 <!DOCTYPE html>
 <html><head>
 	    <meta charset="utf-8">
-    <title>ThinkPHP5.0</title>
+    <title>Wshop</title>
 
     <meta name="description" content="Dashboard">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <!--Basic Styles-->
-    <link href="__ADMIN__/style/bootstrap.css" rel="stylesheet">
-    <link href="__ADMIN__/style/font-awesome.css" rel="stylesheet">
-    <link href="__ADMIN__/style/weather-icons.css" rel="stylesheet">
+    <link href="__admin__/style/bootstrap.css" rel="stylesheet">
+    <link href="__admin__/style/font-awesome.css" rel="stylesheet">
+    <link href="__admin__/style/weather-icons.css" rel="stylesheet">
 
     <!--Beyond styles-->
-    <link id="beyond-link" href="__ADMIN__/style/beyond.css" rel="stylesheet" type="text/css">
-    <link href="__ADMIN__/style/demo.css" rel="stylesheet">
-    <link href="__ADMIN__/style/typicons.css" rel="stylesheet">
-    <link href="__ADMIN__/style/animate.css" rel="stylesheet">
+    <link id="beyond-link" href="__admin__/style/beyond.css" rel="stylesheet" type="text/css">
+    <link href="__admin__/style/demo.css" rel="stylesheet">
+    <link href="__admin__/style/typicons.css" rel="stylesheet">
+    <link href="__admin__/style/animate.css" rel="stylesheet">
     
 </head>
 <body>
 	<!-- 头部 -->
-	{include file="public/top" /} 
+	
+    {include file="common/top"}
 	<!-- /头部 -->
 	
 	<div class="main-container container-fluid">
 		<div class="page-container">
 			<!-- Page Sidebar -->
-            {include file="public/left" /} 
+            {include file="common/left"}
             <!-- /Page Sidebar -->
             <!-- Page Content -->
             <div class="page-content">
@@ -35,10 +36,10 @@
                 <div class="page-breadcrumbs">
                     <ul class="breadcrumb">
                                         <li>
-                        <a href="#">系统</a>
+                        <a href="{:url('index/index')}">系统</a>
                     </li>
                                         <li>
-                        <a href="{:url('lst')}">用户组管理</a>
+                        <a href="{:url('AuthGroup/lst')}">用户组管理</a>
                     </li>
                                         <li class="active">添加用户组</li>
                                         </ul>
@@ -56,56 +57,35 @@
             </div>
             <div class="widget-body">
                 <div id="horizontal-form">
-                    <form class="form-horizontal" role="form" action="" method="post">
-                       <div class="form-group">
-                            <label for="username" class="col-sm-2 control-label no-padding-right">用户组名称</label>
+                    <form class="form-horizontal" id='myform'  enctype="multipart/form-data" role="form"  method="post">
+                        <div class="form-group">
+                            <label  class="col-sm-2 control-label no-padding-right">用户组名</label>
                             <div class="col-sm-6">
                                 <input class="form-control"  placeholder="" name="title" required="" type="text">
                             </div>
                             <p class="help-block col-sm-4 red">* 必填</p>
                         </div>
                         <div class="form-group">
-                            <label for="username" class="col-sm-2 control-label no-padding-right">启用状态</label>
+                            <label  class="col-sm-2 control-label no-padding-right">启用状态</label>
                             <div class="col-sm-6">
-                            <p class="help-block col-sm-4 red">
-                                <label>
-                                    <input class="checkbox-slider colored-darkorange" name="status" value="1" checked="checked" type="checkbox">
-                                    <span class="text"></span>
-                                </label>
-                            </p>
-                            </div>
-                            <p class="help-block col-sm-4 red">* 必填</p>
-                        </div>
-                        <div class="form-group">
-                            <label for="username" class="col-sm-2 control-label no-padding-right"></label>
-                            <div class="col-sm-6">
-                               <table class="table table-hover">
-                                    <thead class="bordered-darkorange">
-                                        <tr>
-                                            <th>
-                                                配置权限
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {volist name="authRuleRes" id="authRule"}
-                                            <tr>
-                                                <td>
-                                                    <label>
-                                                        <?php echo str_repeat('&nbsp;', $authRule['level']*3);?>
-                                                        <input name="rules[]" value="{$authRule.id}" dataid="id-{$authRule.dataid}" class="inverted checkbox-parent {if condition="$authRule['level'] neq 0"} checkbox-child {/if} " type="checkbox">
-                                                        <span {if condition="$authRule['level'] eq 0"} style="font-weight:bold; font-size:14px;" {/if} class="text">{$authRule.title}</span>
-                                                    </label>
-                                                </td>
-                                            </tr>
-                                        {/volist}
-                                    </tbody>
-                                </table>
+                                <div class="radio" style="float: left; padding-right: 10px;">
+                                    <label>
+                                        <input name="status" type="radio"   value='1'>
+                                        <span class="text">启用 </span>
+                                    </label>
+                                </div>
+                                <div class="radio" style="float:left;">
+                                    <label>
+                                        <input name="status" type="radio" checked="checked"  class="inverted" value='0'>
+                                        <span class="text">禁用 </span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
+
                         <div class="form-group">
                             <div class="col-sm-offset-2 col-sm-10">
-                                <button type="submit" class="btn btn-default">保存信息</button>
+                                <button type="button"  class="btn btn-default" id='Preservation'>保存信息</button>
                             </div>
                         </div>
                     </form>
@@ -123,47 +103,32 @@
 	</div>
 
 	    <!--Basic Scripts-->
-    <script src="__ADMIN__/style/jquery_002.js"></script>
-    <script src="__ADMIN__/style/bootstrap.js"></script>
-    <script src="__ADMIN__/style/jquery.js"></script>
+    <script src="__admin__/style/jquery_002.js"></script>
+    <script src="__admin__/style/bootstrap.js"></script>
+    <script src="__admin__/style/jquery.js"></script>
     <!--Beyond Scripts-->
-    <script src="__ADMIN__/style/beyond.js"></script>
+    <script src="__admin__/style/beyond.js"></script>
+    <script src="__admin__/layer/layer.js"></script>
     <script type="text/javascript">
-/* 权限配置 */
-$(function () {
-    //动态选择框，上下级选中状态变化
-    $('input.checkbox-parent').on('change', function () {
-        var dataid = $(this).attr("dataid");
-        $('input[dataid^=' + dataid + ']').prop('checked', $(this).is(':checked'));
-    });
-    $('input.checkbox-child').on('change', function () {
-        var dataid = $(this).attr("dataid");
-        dataid = dataid.substring(0, dataid.lastIndexOf("-"));
-        var parent = $('input[dataid=' + dataid + ']');
-        if ($(this).is(':checked')) {
-            parent.prop('checked', true);
-            //循环到顶级
-            while (dataid.lastIndexOf("-") != 2) {
-                dataid = dataid.substring(0, dataid.lastIndexOf("-"));
-                parent = $('input[dataid=' + dataid + ']');
-                parent.prop('checked', true);
-            }
-        } else {
-            //父级
-            if ($('input[dataid^=' + dataid + '-]:checked').length == 0) {
-                parent.prop('checked', false);
-                //循环到顶级
-                while (dataid.lastIndexOf("-") != 2) {
-                    dataid = dataid.substring(0, dataid.lastIndexOf("-"));
-                    parent = $('input[dataid=' + dataid + ']');
-                    if ($('input[dataid^=' + dataid + '-]:checked').length == 0) {
-                        parent.prop('checked', false);
+        $(function(){
+            $("#Preservation").click(function(){
+                $.ajax({
+                    url:"{:url('AuthGroup/add')}",
+                    type:"post",
+                    data:$("#myform").serialize(),
+                    success:function(data){
+                        if(data.code==1){
+                            layer.msg(data.msg,{icon:1});
+                            setTimeout(function(){
+                                $(location).attr('href', "{:url('AuthGroup/lst')}");
+                            },1000);
+                        }else{
+                            layer.msg(data.msg,{icon:2});
+                        }
                     }
-                }
-            }
-        }
-    });
-});
+                })
+            })            
+        })
     </script>
 
 </body></html>

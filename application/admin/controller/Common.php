@@ -2,29 +2,27 @@
 namespace app\admin\controller;
 use think\Controller;
 use think\Request;
+use auth\Auth;
 class Common extends Controller
 {
-    public function _initialize(){
-        if(!session('id') || !session('name')){
-           $this->error('您尚未登录系统',url('login/index')); 
-        }
 
-        $auth=new Auth();
+    public $config;
+
+    public function  _initialize()
+    {
+        if(!session('uname')){
+            $this->error('请先登录系统','Login/index');
+        }
         $request=Request::instance();
+        $module=$request->module();
         $con=$request->controller();
         $action=$request->action();
-        $name=$con.'/'.$action;
-        $notCheck=array('Index/index','Admin/lst','Admin/logout');
-       //  if(session('id')!=1){
-       //  	if(!in_array($name, $notCheck)){
-       //  		if(!$auth->check($name,session('id'))){
-		    	// $this->error('没有权限',url('index/index')); 
-		    	// }
-       //  	}
-        	
-       //  }
-        
+        $name=$module.'/'.$con.'/'.$action;
+        $auth=new Auth();
+        if(!$auth->check(strtolower($name),session('id'))){
+            $this->error('没有该操作权限');
+        }
+        $this->assign('con',$con);
     }
-
 
 }
